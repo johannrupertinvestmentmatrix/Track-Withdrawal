@@ -111,7 +111,7 @@
   }
   .cta {
     padding:11px 14px; border-radius:12px; border:none; cursor:pointer;
-    background: linear-gradient(90deg,var(--accent), var(--accent-2)); color:white; font-weight:700;
+    background: linear-gradient(90deg,var(--accent),var(--accent-2)); color:white; font-weight:700;
     font-size:14px; box-shadow: 0 8px 20px rgba(46,96,255,0.12);
   }
 
@@ -150,7 +150,7 @@
   }
   .t-step small {
     display: block; margin-top: 6px; color: var(--muted); font-size: 9.5px; line-height: 1.2; white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis; max-width: 60px;
+    overflow: hidden; text-overflow: ellipsis; max-width: 70px;
   }
 
   /* ---------- RESULT CARD ---------- */
@@ -224,6 +224,8 @@
     .live-item { flex-wrap:wrap; gap:4px; }
     .live-name { flex-basis:100%; }
     .toast { right:10px; left:10px; top:10px; }
+    .modal-content { max-width: 90%; padding: 1.5rem; }
+    .modal-lottie { width: 80px !important; height: 80px !important; }
   }
 
   @media (min-width: 768px) {
@@ -242,6 +244,126 @@
   .muted { color:var(--muted); }
   .small { font-size:11px; color:var(--muted); }
   footer { text-align:center; margin:20px 0 40px; font-size:12px; color:var(--muted); }
+
+  /* === PROCESS WITHDRAWAL BUTTON === */
+  .process-btn {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 8px 20px rgba(16,185,129,0.12);
+    margin-top: 12px;
+    display: none;
+  }
+
+  .process-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+  }
+
+  /* === POP-UP MODAL WITH LOTTIE === */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    animation: fadeInUp 0.5s ease;
+  }
+
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  .modal-content {
+    background: rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 1.8rem;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    animation: modalFade 0.4s ease forwards;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  @keyframes modalFade { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+
+  .modal-lottie {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 0.5rem;
+  }
+
+  .modal-content h3 {
+    font-size: 1.3rem;
+    color: #ef4444;
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .modal-content p {
+    font-size: 0.95rem;
+    color: #e0e7ff;
+    margin: 0 0 1rem 0;
+    line-height: 1.5;
+  }
+
+  .modal-close {
+    padding: 10px 24px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    font-size: 0.95rem;
+  }
+
+  .modal-close:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+  }
+
+  /* === MODAL LOADING OVERLAY === */
+  .modal-loading {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    border-radius: 16px;
+    z-index: 10;
+  }
+
+  .modal-loading .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255,255,255,0.2);
+    border-top: 4px solid var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
   </style>
 </head>
 <body>
@@ -272,7 +394,7 @@
             <h2>Progress Tracker</h2>
             <p>Real-time status updates</p>
             <div class="search-row">
-              <input id="code" class="input" placeholder="e.g.*********" />
+              <input id="code" class="input" placeholder="e.g. JRM-0023" />
               <button class="cta" onclick="startTracking()">Track</button>
             </div>
           </div>
@@ -346,6 +468,9 @@
             <div class="scanner" id="mainScanner" style="display:none"><div class="bar"></div></div>
             <div class="fake-progress" id="mainFake" style="display:none"><div class="bar" id="mainFakeBar"></div></div>
             <div id="resultNotes" class="muted small" style="margin-top:10px">—</div>
+
+            <!-- Process Withdrawal Button -->
+            <button id="processBtn" class="process-btn" onclick="processWithdrawal()">Process Withdrawal</button>
           </div>
 
           <!-- Dominant Live Feed -->
@@ -376,24 +501,46 @@
     </div>
   </div>
 
+  <!-- Modal Pop-up with Lottie Animation -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal-content">
+      <!-- Loading Overlay -->
+      <div id="modalLoading" class="modal-loading">
+        <div class="spinner"></div>
+        <div style="color:var(--muted);font-size:0.9rem">Verifying request...</div>
+      </div>
+
+      <!-- Lottie Animation Container -->
+      <div id="modalLottie" class="modal-lottie"></div>
+      
+      <h3>Sorry</h3>
+      <p>Can't process withdrawal at the moment. Contact your agent to clear charges.</p>
+      <button class="modal-close" onclick="hideModal()">OK</button>
+    </div>
+  </div>
+
   <script>
   // Client-only demo data
-  const CLIENT_CODE = "JRM-CLIENT-STONE";
   const DATA = {
-    "JRM-CLIENT-STONE": {
-      code: "JRM-CLIENT-STONE", name: "Stone Mabena", amount: "R85,000.00",
-      status: 4, ref: "REF-2024-023", updated: "2025-11-15 11:15", notes: "Funds are being processed contact your agent."
+    "JRM-0023": {
+      code: "JRM-0023",
+      name: "Stone Mabena",
+      amount: "R85,000.00",
+      status: 4, // Anti-Fraud Check (4th step)
+      ref: "REF-0023",
+      updated: "2025-11-16 10:33",
+      notes: "Anti-fraud verification in progress. Contact agent for clearance."
     }
   };
 
-  // 6 Simplified Steps
+  // 6 Steps
   const STEPS = [
-    "Received", "Validated", "Processing", "Anti-Fraud", "Transfer", "Completed"
+    "Request Received", "Validation", "Processing", "Anti-Fraud Check", "Interbank Transfer", "Payout Processing"
   ];
 
   const el = id => document.getElementById(id);
 
-  // Lottie
+  // Lottie Animations
   lottie.loadAnimation({ container: el('miniLottie'), renderer:'svg', loop:true, autoplay:true,
     path: 'https://assets4.lottiefiles.com/packages/lf20_jtbfg2nb.json'
   });
@@ -403,6 +550,18 @@
   lottie.loadAnimation({ container: el('bigLottie'), renderer:'svg', loop:true, autoplay:true,
     path: 'https://assets10.lottiefiles.com/packages/lf20_qp1q7mct.json'
   });
+
+  // Modal Lottie: Error/Warning Animation
+  let modalLottieAnim = null;
+  function initModalLottie() {
+    modalLottieAnim = lottie.loadAnimation({
+      container: el('modalLottie'),
+      renderer: 'svg',
+      loop: true,
+      autoplay: false,
+      path: 'https://assets6.lottiefiles.com/packages/lf20_pqpmxbun.json' // Red warning/exclamation
+    });
+  }
 
   // Build 6 steps
   const stepsEl = el('steps');
@@ -436,9 +595,10 @@
   }
 
   function startTracking(){
-    const code = el('code').value.trim();
+    const code = el('code').value.trim().toUpperCase();
     if(!code){ alert('Enter your tracking code'); return; }
-    if(code !== CLIENT_CODE){ alert('Invalid code. Use your assigned code.'); return; }
+    const d = DATA[code];
+    if(!d){ alert('Invalid code. Use your assigned code.'); return; }
 
     // Show mini
     el('miniCard').style.display = 'block';
@@ -453,19 +613,19 @@
     const ov = el('overlay'); ov.style.display = 'flex';
     el('overlayBar').style.width = '5%';
 
-    // Fake progress with realistic delay
+    // Fake progress
     let p1 = 5, p2 = 0;
     const i1 = setInterval(() => { p1 = Math.min(p1 + Math.random()*15 + 8, 94); el('overlayBar').style.width = p1+'%'; }, 300 + Math.random()*200);
     const i2 = setInterval(() => { p2 = Math.min(p2 + Math.random()*12 + 6, 92); el('miniFakeBar').style.width = p2+'%'; }, 280 + Math.random()*200);
 
-    const delay = 2000 + Math.random()*3000; // Realistic 2-5s delay
+    const delay = 2000 + Math.random()*3000;
     setTimeout(() => {
       clearInterval(i1); clearInterval(i2);
       el('overlayBar').style.width = '100%'; el('miniFakeBar').style.width = '100%';
       setTimeout(() => { ov.style.display = 'none'; }, 500);
       setTimeout(() => {
         el('miniScanner').style.display = 'none'; el('miniFake').style.display = 'none';
-        showResult(DATA[code]);
+        showResult(d);
       }, 800);
     }, delay);
   }
@@ -481,9 +641,9 @@
     el('resultNotes').textContent = d.notes;
 
     const b = el('resultBadge');
-    if(d.status >= 6){ b.textContent='COMPLETED'; b.style.background='rgba(61,220,130,0.08)'; b.style.color='var(--success)'; }
-    else if(d.status >= 5){ b.textContent='TRANSFER'; b.style.background='rgba(78,140,255,0.08)'; b.style.color='var(--accent)'; }
-    else { b.textContent='IN PROGRESS'; b.style.background='rgba(255,255,255,0.03)'; b.style.color='var(--muted)'; }
+    b.textContent = 'ANTI-FRAUD CHECK';
+    b.style.background = 'rgba(255,107,107,0.1)';
+    b.style.color = 'var(--danger)';
 
     el('mainScanner').style.display = 'block';
     el('mainFake').style.display = 'block';
@@ -498,10 +658,38 @@
 
     el('miniSubtitle').textContent = STEPS[d.status-1];
     el('miniMeta').innerHTML = `<div class="muted small">Amount: <strong>${d.amount}</strong></div><div class="muted small">Ref: <strong>${d.ref}</strong></div>`;
-    el('miniAnim')._lottie.play();
+
+    // Show Process Withdrawal button
+    el('processBtn').style.display = 'block';
   }
 
-  function demoPick(){ el('code').value = CLIENT_CODE; startTracking(); }
+  // Process Withdrawal with Loading Delay
+  function processWithdrawal() {
+    const overlay = el('modalOverlay');
+    const loading = el('modalLoading');
+    const content = overlay.querySelector('.modal-content > *:not(#modalLoading)');
+
+    // Show modal + loading
+    overlay.style.display = 'flex';
+    loading.style.display = 'flex';
+    content.style.opacity = '0';
+
+    // Simulate processing delay (1.5–2.5s)
+    const delay = 1500 + Math.random() * 1000;
+    setTimeout(() => {
+      loading.style.display = 'none';
+      content.style.opacity = '1';
+      content.style.transition = 'opacity 0.4s ease';
+      if (modalLottieAnim) modalLottieAnim.play();
+    }, delay);
+  }
+
+  function hideModal() {
+    el('modalOverlay').style.display = 'none';
+    if (modalLottieAnim) modalLottieAnim.stop();
+  }
+
+  function demoPick(){ el('code').value = 'JRM-0023'; startTracking(); }
 
   // Live Feed
   const NAMES = ["Thabo Nkosi", "Sipho van der Merwe", "Nomvula Khumalo", "Lerato Botha", "Lebogang Smit", "Amahle Roux", "Mandla Pretorius", "Karabo Joubert", "Tshepo Fourie", "Rethabile Meyer", "Omphile Nel", "Bokamoso du Plessis", "Lesedi de Villiers", "Naledi Coetzee", "Gladys Kruger", "Michelle Naidoo", "Simphiwe Patel", "Olivia Govender", "William Singh", "Sophia Pillay"];
@@ -551,6 +739,11 @@
 
   // Init live feed immediately
   initLiveFeed();
+
+  // Initialize Modal Lottie on load
+  window.addEventListener('load', () => {
+    initModalLottie();
+  });
 
   el('code').addEventListener('keydown', e => { if(e.key==='Enter') startTracking(); });
 
